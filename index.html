@@ -1,11 +1,10 @@
 <!DOCTYPE html>
-<html lang="ko">
-<head>
+<html lang="ko"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>B2B Wholesale Catalog - Excel Import</title>
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <link rel="stylesheet" as="style" crossorigin="" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+    
     <style>
         :root {
             --primary: #1A237E; 
@@ -243,7 +242,7 @@
         }
     </style>
 </head>
-<body class="edit-mode">
+<body class="">
 
     <!-- 팝업 모달 영역 -->
     <div class="modal-overlay" id="productModal" onclick="closeModal(event)">
@@ -255,48 +254,794 @@
     </div>
 
     <header class="catalog-header">
-        <h1 class="editable" contenteditable="true">B2B Wholesale Catalog</h1>
-        <p class="editable" contenteditable="true">2025 S/S 시즌 도매 단가표 및 상품 스펙 (최소 주문 수량: 컬러별 1세트)</p>
+        <h1 class="">B2B Wholesale Catalog</h1>
+        <p class="">2025 Spring 시즌 도매 단가표 및 상품 스펙&nbsp;</p>
     </header>
 
     <div class="container">
         
-        <div class="guide-box" id="guideBox">
-            <span style="font-size: 1.5rem;">💡</span>
-            <div>
-                <strong>업데이트: 엑셀 이미지 다중 URL(슬라이드) 연동 지원!</strong><br>
-                1. 샘플 엑셀 파일에 <b>'이미지URL1~5'</b> 열이 추가되었습니다. URL을 여러 개 넣으면 카드가 자동으로 <b>좌우로 넘겨보는 슬라이드 형태</b>가 됩니다.<br>
-                2. 이미지가 없는 칸은 이전처럼 카드 생성 후 <b>직접 드래그&드롭</b> 하거나 <b>클릭해서 업로드</b> 할 수 있습니다.<br>
-                3. 업로드된 이미지도 다른 이미지로 드래그(또는 클릭)해서 언제든 수정 가능합니다.
-            </div>
-            <button class="btn btn-outline" style="margin-left:auto; padding: 4px 8px; font-size: 0.8rem;" onclick="document.getElementById('guideBox').style.display='none'">닫기</button>
-        </div>
+        
 
-        <div class="toolbar">
-            <div class="toolbar-group">
-                <button class="btn btn-excel" onclick="downloadExcelTemplate()">📊 샘플 엑셀 다운로드</button>
-                <button class="btn btn-excel" onclick="document.getElementById('excelUpload').click()">📁 엑셀 파일 업로드</button>
-                <input type="file" id="excelUpload" accept=".xlsx, .xls, .csv" style="display: none;" onchange="handleExcelUpload(event)">
-                <button class="btn btn-excel" style="background-color: #059669;" onclick="exportToExcel()">📤 현재 화면 엑셀로 내보내기</button>
-            </div>
-            <div class="toolbar-group">
-                <button class="btn btn-outline" onclick="addCard()">➕ 빈 카드 1개 추가</button>
-                <button class="btn btn-danger" onclick="clearAllCards()">🗑️ 전체 삭제</button>
-                <div style="width: 1px; height: 24px; background: #ddd; margin: 0 5px;"></div>
-                <button class="btn" onclick="saveHTML()">💾 최종 HTML 저장</button>
-            </div>
-        </div>
+        
 
         <!-- 엑셀 데이터 기반으로 자동 생성되는 카테고리 필터 버튼 영역 -->
-        <div class="category-filter-wrap" id="category-filters">
-            <button class="filter-btn active" onclick="filterCategory('ALL')">전체보기</button>
-            <button class="filter-btn" onclick="filterCategory('스니커즈')">스니커즈</button>
-            <button class="filter-btn" onclick="filterCategory('로퍼/구두')">로퍼/구두</button>
-        </div>
+        <div class="category-filter-wrap" id="category-filters"><button class="filter-btn active" onclick="filterCategory('ALL')">전체보기</button><button class="filter-btn" onclick="filterCategory('펌프스힐')">펌프스힐</button><button class="filter-btn" onclick="filterCategory('스니커즈')">스니커즈</button><button class="filter-btn" onclick="filterCategory('스니커즈/블로퍼')">스니커즈/블로퍼</button><button class="filter-btn" onclick="filterCategory('로퍼')">로퍼</button><button class="filter-btn" onclick="filterCategory('플랫')">플랫</button></div>
 
-        <div class="ws-grid" id="catalog-grid">
-            <!-- 초기 샘플 카드 -->
-        </div>
+        <div class="ws-grid" id="catalog-grid"><div class="ws-card" data-category="펌프스힐">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">펌프스힐</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5188%20%284%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5188%20%281%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5188%20%282%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5188%20%283%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5188%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5188</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">18,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">26,000</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">매쉬</td></tr>
+                                <tr><th>굽높이</th><td class="">4cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/베이지</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="스니커즈">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">스니커즈</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5302%20%281%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5302%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5302%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5302%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5302%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5302</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">22,500</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">31,000</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">소가죽/ 패브릭</td></tr>
+                                <tr><th>굽높이</th><td class="">1cm</td></tr>
+                                <tr><th>컬러</th><td class="">레드/베이지/그레이</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="스니커즈">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">스니커즈</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5303%20%281%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5303%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5303%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5303%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5303%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5303</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">21,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">30,000</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">소가죽/ 폴리에스테르</td></tr>
+                                <tr><th>굽높이</th><td class="">4cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/베이지/그레이</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="스니커즈/블로퍼">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">스니커즈/블로퍼</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5304%20%281%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5304%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5304%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5304%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5304%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5304</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">23,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">29,000</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">소가죽/ 폴리에스테르</td></tr>
+                                <tr><th>굽높이</th><td class="">4cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/베이지/그레이</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="스니커즈">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">스니커즈</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5305%20%282%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5305%20%281%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5305%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5305%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5305%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5305</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">25,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">33,000</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">소가죽/ 패브릭</td></tr>
+                                <tr><th>굽높이</th><td class="">2cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/베이지/ 레오파드</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="로퍼">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">로퍼</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5306%20%282%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5306%20%281%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5306%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5306%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5306%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5306</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">23,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">29,000</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">액션가죽</td></tr>
+                                <tr><th>굽높이</th><td class="">3cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/브라운</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="로퍼">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">로퍼</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5306A%20%281%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5306A%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5306A%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5306A%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5306A%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5306A</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">23,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">29,000</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">액션가죽</td></tr>
+                                <tr><th>굽높이</th><td class="">3cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/브라운</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="로퍼">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">로퍼</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5307%20%283%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5307%20%281%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5307%20%284%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5307%20%285%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5307</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">23,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">29,000</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">극세사합성피</td></tr>
+                                <tr><th>굽높이</th><td class="">3cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/그레이</td></tr>
+                                <tr><th>사이즈</th><td class="">225~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="스니커즈">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">스니커즈</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/3001%20%281%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/3001%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/3001%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/3001%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/3001%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">3001</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">25,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">0</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">천연가죽콤비</td></tr>
+                                <tr><th>굽높이</th><td class="">2cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/베이지/그레이</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="플랫">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">플랫</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5315%20%281%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5315%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5315%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5315%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5315%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5315</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">21,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">31,000</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">소가죽</td></tr>
+                                <tr><th>굽높이</th><td class="">1cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/옐로우/그레이</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="스니커즈">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">스니커즈</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5314%20%284%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5314%20%281%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5314%20%282%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5314%20%283%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5314%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5314</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">28,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">39,000</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">천연가죽콤비</td></tr>
+                                <tr><th>굽높이</th><td class="">5.5cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/화이트</td></tr>
+                                <tr><th>사이즈</th><td class="">225-250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="로퍼">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">로퍼</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5170%20%281%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5170%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5170%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5170%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5170%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5170</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">23,500</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">0</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">소가죽</td></tr>
+                                <tr><th>굽높이</th><td class="">4cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/브라운</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="로퍼">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">로퍼</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5171%20%284%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5171%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5171%20%281%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5171%20%283%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5171%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5171</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">24,500</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">0</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">소가죽</td></tr>
+                                <tr><th>굽높이</th><td class="">4cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/브라운</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="스니커즈">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">스니커즈</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5217%20%284%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5217%20%285%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5217%20%281%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5217%20%282%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5217%20%283%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5217</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">27,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">0</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">소가죽</td></tr>
+                                <tr><th>굽높이</th><td class="">4cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/아이보리</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="스니커즈">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">스니커즈</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5219%20%281%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5219%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5219%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5219%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5219%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5219</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">24,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">0</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">소가죽</td></tr>
+                                <tr><th>굽높이</th><td class="">2cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/실버/아이보리</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="스니커즈">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">스니커즈</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5221%20%281%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5221%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5221%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5221%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5221%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5221</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">12,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">0</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">폴리에스테르</td></tr>
+                                <tr><th>굽높이</th><td class="">4cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/아이보리</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="스니커즈/블로퍼">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">스니커즈/블로퍼</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5222%20%281%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5222%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5222%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5222%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5222%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5222</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">24,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">0</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">소가죽/ 폴리에스테르</td></tr>
+                                <tr><th>굽높이</th><td class="">5cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/그레이/ 아이보리</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div><div class="ws-card" data-category="펌프스힐">
+                    
+                    <div class="ws-img-wrap">
+                        <span class="ws-category-badge">펌프스힐</span>
+                        <div class="img-box filled">
+                    <div class="slider-container" data-current="0">
+                        <img src="http://flameworks.dothome.co.kr/b2b/5180%20%281%29.webp" class="slider-img" data-idx="0" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5180%20%282%29.webp" class="slider-img" data-idx="1" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5180%20%283%29.webp" class="slider-img" data-idx="2" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5180%20%284%29.webp" class="slider-img" data-idx="3" style="transform: translateX(0%);"><img src="http://flameworks.dothome.co.kr/b2b/5180%20%285%29.webp" class="slider-img" data-idx="4" style="transform: translateX(0%);">
+                    </div>
+                    <button class="slider-btn prev" onclick="moveSlide(this.closest('.img-box'), -1, event)">❮</button>
+                    <button class="slider-btn next" onclick="moveSlide(this.closest('.img-box'), 1, event)">❯</button>
+                    <div class="slider-dots"><div class="slider-dot active" onclick="goToSlide(this.closest('.img-box'), 0, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 1, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 2, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 3, event)"></div><div class="slider-dot " onclick="goToSlide(this.closest('.img-box'), 4, event)"></div></div>
+                    
+                
+            
+                </div>
+                    </div>
+                    <div class="ws-info">
+                        <div class="ws-head-row">
+                            <div class="ws-title-box">
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag primary">모델명</span>
+                                    <div class="ws-code">5180</div>
+                                </div>
+                                <div class="ws-info-block">
+                                    <span class="ws-label-tag gray">상품명</span>
+                                    <div class="ws-name"></div>
+                                </div>
+                            </div>
+                            <div class="ws-price-box">
+                                <span class="ws-price-label">도매가</span>
+                                <div class="ws-price"><span class="">19,000</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+                                <div class="ws-retail"> <span class="">0</span>원</div>
+                            </div>
+                        </div>
+                        <table class="ws-specs">
+                            <tbody>
+                                <tr><th>소재</th><td class="">패브릭</td></tr>
+                                <tr><th>굽높이</th><td class="">4cm</td></tr>
+                                <tr><th>컬러</th><td class="">블랙/핑크/블루/베이지</td></tr>
+                                <tr><th>사이즈</th><td class="">230~250</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div></div>
     </div>
 
     <script>
@@ -1031,5 +1776,5 @@
             }
         }
     </script>
-</body>
-</html>
+
+</body></html>
