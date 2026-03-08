@@ -114,6 +114,10 @@ function setupEventListeners() {
         }
     });
 
+    // 🚨 카톡 인앱 브라우저 방어용 이벤트 융단폭격 🚨
+    window.addEventListener('focus', checkVersionFromGoogleSheet);
+    window.addEventListener('pageshow', () => checkVersionFromGoogleSheet());
+
     // 헤더의 새로고침 버튼 수동 갱신 연결
     const refreshBtn = document.querySelector('.refresh-btn');
     if (refreshBtn) {
