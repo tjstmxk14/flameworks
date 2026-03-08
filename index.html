@@ -4,20 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>B2B Wholesale Catalog</title>
-    
-    <!-- 캐시 무력화 메타 태그 (HTML 껍데기용) -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
     
     <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-    
-    <!-- 외부로 모듈화된 CSS -->
-    <link rel="stylesheet" href="css/style.css">
+        <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-
-    <!-- 상품 상세 모달 팝업 -->
     <div class="modal-overlay" id="productModal" onclick="closeModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <button class="modal-close" onclick="closeModal()">✕</button>
@@ -25,8 +19,6 @@
             <div class="modal-info-area" id="modalInfo"></div>
         </div>
     </div>
-
-    <!-- 헤더 및 컨트롤 영역 -->
     <header class="catalog-header">
         <h1>Wholesale Catalog</h1>
         <p>2026 Spring</p>
@@ -38,26 +30,17 @@
             </div>
         </div>
     </header>
-
-    <!-- 메인 컨텐츠 영역 -->
     <div class="container">
-        <!-- 초기 로딩 스피너 -->
         <div id="loading">
             <div class="spinner"></div>
             <div class="loading-text" id="loadingMsg">데이터를 불러오는 중입니다...</div>
         </div>
+                <div class="category-filter-wrap" id="category-filters" style="display:none;"></div>
         
-        <!-- 카테고리 필터 버튼 렌더링 영역 -->
-        <div class="category-filter-wrap" id="category-filters" style="display:none;"></div>
-        
-        <!-- 검색 결과 없음 메시지 -->
         <div id="no-results">검색된 상품이 없습니다.</div>
         
-        <!-- 상품 카드 그리드 렌더링 영역 -->
         <div class="ws-grid" id="catalog-grid"></div>
     </div>
-
-    <!-- 외부로 모듈화된 JS (body 최하단에 배치하여 렌더링 블로킹 방지) -->
     <script src="js/app.js"></script>
 </body>
 </html>

@@ -15,18 +15,15 @@ function initApp() {
     const cachedVersion = localStorage.getItem('b2b_catalog_version');
 
     if (cachedData && cachedVersion) {
-        // [SWR 패턴] 1. 일단 캐시된 데이터로 0초 만에 렌더링
         try {
             const parsedCache = JSON.parse(cachedData);
             processJSONData(parsedCache, false); // 초기 렌더링(캐시)
             
-            // 2. 그려놓고 백그라운드에서 Z1 셀 몰래 검사
             checkVersionFromGoogleSheet(); 
         } catch(e) {
             fetchFullDataFromGoogleSheet();
         }
     } else {
-        // 캐시가 없으면 바로 전체 데이터 요청
         fetchFullDataFromGoogleSheet();
     }
 }
@@ -107,18 +104,15 @@ function setupEventListeners() {
         });
     }
 
-    // [최적화 핵심] 탭으로 돌아올 때 버전 찔러보기
     document.addEventListener('visibilitychange', () => {
         if (document.visibilityState === 'visible') {
             checkVersionFromGoogleSheet();
         }
     });
 
-    // 🚨 카톡 인앱 브라우저 방어용 이벤트 융단폭격 🚨
     window.addEventListener('focus', checkVersionFromGoogleSheet);
     window.addEventListener('pageshow', () => checkVersionFromGoogleSheet());
 
-    // 헤더의 새로고침 버튼 수동 갱신 연결
     const refreshBtn = document.querySelector('.refresh-btn');
     if (refreshBtn) {
         refreshBtn.addEventListener('click', () => {
@@ -162,20 +156,17 @@ window.versionCheckCallback = function(jsonObj) {
 
     const cachedVersion = localStorage.getItem('b2b_catalog_version');
 
-    // [핵심 변경점] 버전 다르면 토스트 UI 띄우지 말고 바로 강제 렌더링 시전
     if (latestVersion && latestVersion !== cachedVersion) {
         localStorage.setItem('b2b_catalog_version', latestVersion);
-        fetchFullDataFromGoogleSheet(true); // 자동 갱신이지만 화면 리셋(로딩) 허용
+        fetchFullDataFromGoogleSheet(true); // 자동 갱신  허용
     }
 };
 
 function fetchFullDataFromGoogleSheet(forceLoadingUI = false) {
     isFetchingFullData = true;
     
-    // 강제 갱신이거나 캐시가 없을 때만 로딩바 표시
     if (forceLoadingUI || !localStorage.getItem('b2b_catalog_data')) {
         showLoading(true);
-        // 사용자 검색어나 필터 초기화 방지를 위해 UI 리셋은 최소화 (그리드 숨김 처리만)
     }
 
     const scriptId = 'google-sheet-full-jsonp';
@@ -201,11 +192,10 @@ window.googleSheetCallback = function(jsonObj) {
 
     try {
         localStorage.setItem('b2b_catalog_data', JSON.stringify(jsonObj));
-        // 전체 다운 받았으니 버전 동기화 (보험용)
         checkVersionFromGoogleSheet();
     } catch(e) {}
 
-    processJSONData(jsonObj, true); // 새로 받아온 데이터 렌더링
+    processJSONData(jsonObj, true); 
 };
 
 function processJSONData(json, isNewData = false) {
@@ -297,14 +287,12 @@ function renderData(data, isNewData) {
 
     grid.innerHTML = htmlBuffer;
     
-    // 카테고리 필터를 처음이거나 새 데이터일 때만 다시 그림 (사용자 선택 유지 목적)
     if (!document.getElementById('category-filters').innerHTML || isNewData) {
         generateCategoryFilters(uniqueCategories);
     }
     
     showLoading(false);
     
-    // 새 데이터가 그려지면 사용자가 입력해둔 검색어나 필터를 즉시 적용
     applyFilters();
 }
 
