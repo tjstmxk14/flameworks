@@ -247,13 +247,17 @@ function renderData(data, isNewData) {
 
     data.forEach((row) => {
         const getVal = (possibleKeys) => {
-            const foundKey = Object.keys(row).find(k => possibleKeys.includes(k.replace(/\s+/g, '')));
-            return foundKey ? row[foundKey] : "";
+            for (let i = 0; i < possibleKeys.length; i++) {
+                if (row[possibleKeys[i]] !== undefined) {
+                    return row[possibleKeys[i]];
+                }
+            }
+            return "";
         };
 
         const category = getVal(["분류(카테고리)", "분류", "카테고리", "시즌"]) || "기본";
         const code = getVal(["품번", "상품코드", "모델명"]);
-        const name = getVal(["상품명", "상품", "이름"]);
+        const name = getVal(["비고", "상품명", "상품", "이름"]);
         
         if (!code && !name) return; 
 
@@ -296,6 +300,11 @@ function renderData(data, isNewData) {
     applyFilters();
 }
 
+function formatRemarks(text) {
+    if (!text) return '';
+    return text.replace(/(#[^#]+)/g, match => `<span class="ws-hashtag">${match.trim()}</span>`);
+}
+
 function buildCardHTMLString(product) {
     const {category, imgUrls, code, name, wholesale, retail, material, heel, color, size, searchString} = product;
     
@@ -303,9 +312,9 @@ function buildCardHTMLString(product) {
     if (imgUrls.length === 0) {
         imgHTML = `<div class="img-box"><div style="color:#9ca3af; font-size:0.9rem;">이미지 없음</div></div>`;
     } else if (imgUrls.length === 1) {
-        imgHTML = `<div class="img-box"><img src="${imgUrls[0]}" class="preview-img" loading="lazy" decoding="async"></div>`;
+        imgHTML = `<div class="img-box"><img src="${imgUrls[0]}" class="preview-img" loading="lazy" decoding="async" onload="this.classList.add('loaded')"></div>`;
     } else {
-        let slides = imgUrls.map((url, idx) => `<img src="${url}" class="slider-img" style="transform: translateX(-0%);" loading="lazy" decoding="async">`).join('');
+        let slides = imgUrls.map((url, idx) => `<img src="${url}" class="slider-img" style="transform: translateX(-0%);" loading="lazy" decoding="async" onload="this.classList.add('loaded')">`).join('');
         let dots = imgUrls.map((_, idx) => `<div class="slider-dot ${idx===0?'active':''}" data-index="${idx}"></div>`).join('');
         imgHTML = `
             <div class="img-box">
@@ -317,6 +326,15 @@ function buildCardHTMLString(product) {
         `;
     }
 
+    let retailHTML = (retail && retail !== "0") ? `<div class="ws-retail"> <span>${retail}</span>원</div>` : '';
+    let priceHTML = `
+        <div class="ws-price-box">
+            <span class="ws-price-label">도매가</span>
+            <div class="ws-price"><span>${wholesale}</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
+            ${retailHTML}
+        </div>
+    `;
+
     return `
         <div class="ws-card" data-category="${category}" data-search-string="${searchString}">
             <div class="ws-img-wrap">
@@ -327,19 +345,16 @@ function buildCardHTMLString(product) {
                 <div class="ws-head-row">
                     <div class="ws-title-box">
                         <div class="ws-info-block">
-                            <span class="ws-label-tag primary">모델명</span>
+                            <span class="ws-code-label">모델명</span>
                             <div class="ws-code">${code}</div>
                         </div>
-                        <div class="ws-info-block">
-                            <span class="ws-label-tag gray">상품명</span>
-                            <div class="ws-name">${name}</div>
+                        ${name ? `
+                        <div class="ws-info-block" style="margin-top: 6px;">
+                            <div class="ws-name">${formatRemarks(name)}</div>
                         </div>
+                        ` : ''}
                     </div>
-                    <div class="ws-price-box">
-                        <span class="ws-price-label">도매가</span>
-                        <div class="ws-price"><span>${wholesale}</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
-                        <div class="ws-retail"> <span>${retail}</span>원</div>
-                    </div>
+                    ${priceHTML}
                 </div>
                 <table class="ws-specs">
                     <tbody>
@@ -470,6 +485,26 @@ function openModal(card) {
     imgBox.style.cursor = 'default';
     modalImg.innerHTML = '';
     modalImg.appendChild(imgBox);
+
+    // 크게 보기 버튼 추가
+    const expandBtn = document.createElement('button');
+    expandBtn.className = 'modal-expand-btn';
+    expandBtn.innerHTML = '크게 보기';
+    expandBtn.onclick = function(e) {
+        e.stopPropagation();
+        let currentImgUrl = '';
+        const container = imgBox.querySelector('.slider-container');
+        if (container) {
+            const currentIdx = parseInt(container.getAttribute('data-current')) || 0;
+            const imgs = container.querySelectorAll('.slider-img');
+            if (imgs[currentIdx]) currentImgUrl = imgs[currentIdx].src;
+        } else {
+            const preview = imgBox.querySelector('.preview-img');
+            if (preview) currentImgUrl = preview.src;
+        }
+        if (currentImgUrl) window.open(currentImgUrl, '_blank');
+    };
+    modalImg.appendChild(expandBtn);
 
     const infoBox = card.querySelector('.ws-info').cloneNode(true);
     modalInfo.innerHTML = '';
