@@ -240,6 +240,20 @@ function processJSONData(json, isNewData = false) {
     renderData(parsedData, isNewData);
 }
 
+function normalizeAssetUrl(url) {
+    if (!url || typeof url !== 'string') return '';
+
+    const trimmedUrl = url.trim();
+    if (!trimmedUrl) return '';
+
+    if (trimmedUrl.startsWith('data:') || trimmedUrl.startsWith('blob:')) return trimmedUrl;
+    if (trimmedUrl.startsWith('//')) return `https:${trimmedUrl}`;
+    if (/^http:\/\//i.test(trimmedUrl)) return trimmedUrl.replace(/^http:\/\//i, 'https://');
+    if (/^https:\/\//i.test(trimmedUrl)) return trimmedUrl;
+
+    return `https://${trimmedUrl}`;
+}
+
 function renderData(data, isNewData) {
     const grid = document.getElementById('catalog-grid');
     const uniqueCategories = new Set();
@@ -276,11 +290,8 @@ function renderData(data, isNewData) {
             let url = getVal([`이미지URL${i}`, `이미지${i}`, `이미지url${i}`]);
             if(!url && i===1) url = getVal(["이미지URL", "이미지"]);
             
-            if (url && typeof url === 'string') {
-                url = url.trim();
-                if (url !== '' && !url.startsWith('http') && !url.startsWith('data:')) url = 'https://' + url;
-                if (url !== '') imgUrls.push(url);
-            }
+            url = normalizeAssetUrl(url);
+            if (url) imgUrls.push(url);
         }
 
         uniqueCategories.add(category);
