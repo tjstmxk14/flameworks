@@ -1,59 +1,47 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B2B Wholesale Catalog</title>
-        <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    
-    <link rel="preconnect" href="https://docs.google.com">
-    <link rel="preconnect" href="https://cdn.jsdelivr.net">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="shortcut icon" href="favicon.svg">
-    
-    <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
-        <link rel="stylesheet" href="css/style.css">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="robots" content="noindex,nofollow">
+<title>상품 단가</title>
+<link rel="stylesheet" href="css/style.css?v=20260917-1">
 </head>
 <body>
-    <div class="modal-overlay" id="productModal" onclick="closeModal(event)">
-        <div class="modal-content" onclick="event.stopPropagation()">
-            <button class="modal-close" onclick="closeModal()">✕</button>
-            <div class="modal-img-area" id="modalImg"></div>
-            <div class="modal-info-area" id="modalInfo"></div>
-        </div>
-    </div>
-    <header class="catalog-header">
-        <a href="https://inventory-system-09yj.onrender.com/" target="_blank" class="header-link">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 4px; margin-bottom: -2px;">
-                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                <polyline points="15 3 21 3 21 9"></polyline>
-                <line x1="10" y1="14" x2="21" y2="3"></line>
-            </svg>
-            재고 사이트
-        </a>
-        <h1>Wholesale Catalog</h1>
-        <p>PLAYCACTUS</p>
-        
-        <div class="search-container">
-            <div class="search-input-wrapper">
-                <span class="search-icon"></span>
-                <input type="text" id="searchInput" class="search-input" placeholder="모델명 연속 검색 (예: 5188 5302 5304)">
-            </div>
-        </div>
-    </header>
-    <div class="container">
-        <div id="loading">
-            <div class="spinner"></div>
-            <div class="loading-text" id="loadingMsg">데이터를 불러오는 중입니다...</div>
-        </div>
-                <div class="category-filter-wrap" id="category-filters" style="display:none;"></div>
-        
-        <div id="no-results">검색된 상품이 없습니다.</div>
-        
-        <div class="ws-grid" id="catalog-grid"></div>
-    </div>
-    <script src="js/app.js"></script>
+<main>
+<div class="toolbar" role="search">
+<input id="search" type="search" placeholder="모델명 또는 색상 검색" aria-label="모델명 또는 색상 검색" autocomplete="off">
+<select id="color" aria-label="색상 필터"><option value="">전체 색상</option></select>
+<select id="sort" aria-label="정렬">
+<option value="index:asc">원본 순서</option><option value="model:asc">모델명순</option>
+<option value="price:asc">단가 낮은순</option><option value="price:desc">단가 높은순</option>
+<option value="stock:desc">재고 많은순</option><option value="stock:asc">재고 적은순</option>
+</select>
+<button id="reload" type="button" onclick="location.reload()">새로고침</button>
+</div>
+<p id="load-message" class="load-error" role="status">상품을 불러오는 중입니다.</p>
+<table id="catalog" aria-label="상품별 이미지, 단가, 사이즈별 재고" hidden>
+<colgroup><col class="col-photo"><col class="col-model"><col class="col-color"><col class="col-price"><col span="7" class="col-quantity"><col class="col-total"></colgroup>
+<thead><tr><th scope="col">이미지</th><th scope="col">모델</th><th scope="col">색상</th><th scope="col">단가</th><th scope="col">225</th><th scope="col">230</th><th scope="col">235</th><th scope="col">240</th><th scope="col">245</th><th scope="col">250</th><th scope="col">255</th><th scope="col">합계</th></tr></thead>
+<tbody></tbody>
+</table>
+<p id="empty" class="empty" role="status" hidden>검색 결과가 없습니다.</p>
+<noscript>상품을 보려면 브라우저의 JavaScript를 켜 주세요.</noscript>
+</main>
+<dialog id="zoom" aria-labelledby="zoom-name">
+<div class="dialog-head"><span id="zoom-name"></span><button id="close-zoom" type="button" autofocus>닫기</button></div>
+<div class="dialog-picture"><img id="zoom-image" alt="" referrerpolicy="no-referrer"><div id="zoom-error" class="dialog-error" hidden><p>이미지를 불러오지 못했습니다.</p><a id="original-link" target="_blank" rel="noopener noreferrer">원본 이미지 열기</a></div></div>
+</dialog>
+<script>
+window.FLAMEWORKS_BUILD = '20260917-1';
+const app = document.createElement('script');
+app.src = 'js/app.js?t=' + Date.now();
+app.onerror = () => { document.getElementById('load-message').textContent = '사이트를 불러오지 못했습니다. 새로고침해 주세요.'; };
+document.body.appendChild(app);
+</script>
 </body>
 </html>

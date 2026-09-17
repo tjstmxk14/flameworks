@@ -1,563 +1,276 @@
-const GOOGLE_SHEET_ID = "1GakBnRrG4DS02deVaHGvE70LpP9qo0HOdf6ClgyhLgA"; 
+(() => {
+  'use strict';
+  const SHEET_ID = '1GakBnRrG4DS02deVaHGvE70LpP9qo0HOdf6ClgyhLgA';
+  const SHEET_GID = '1714803519';
+  const SIZES = ['225', '230', '235', '240', '245', '250', '255'];
+  const $ = id => document.getElementById(id);
+  const body = document.querySelector('tbody');
+  const table = $('catalog');
+  const message = $('load-message');
+  const search = $('search');
+  const color = $('color');
+  const sort = $('sort');
+  const dialog = $('zoom');
+  const zoomImage = $('zoom-image');
+  const collator = new Intl.Collator('ko', {numeric: true, sensitivity: 'base'});
+  const money = new Intl.NumberFormat('ko-KR');
+  const esc = text => String(text).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
+  const normal = text => String(text).trim().toLowerCase().replace(/\s+/g, '');
+  let products = [], rows = [], timer, controller, requestNumber = 0, returnFocus;
+  let sheetActivated = false;
+  try {
+    localStorage.removeItem('b2b_catalog_data');
+    localStorage.removeItem('b2b_catalog_version');
+    sheetActivated = localStorage.getItem('flameworks_sheet_active_v1') === '1';
+  } catch (_) { /* Storage may be disabled in an embedded browser. */ }
 
-let debounceTimer;
-let isFetchingFullData = false;
-let isCheckingVersion = false; // 중복 버전 체크 방지 플래그
+  function number(value) {
+    const text = String(value == null ? '' : value).replace(/[,\s₩원]/g, '');
+    return /^\d+$/.test(text) && Number.isSafeInteger(Number(text)) ? Number(text) : null;
+  }
 
-document.addEventListener('DOMContentLoaded', () => {
-    initApp();
-});
+  function imageURL(value) {
+    try {
+      const url = new URL(String(value).trim());
+      if (!['http:', 'https:'].includes(url.protocol)) return '';
+      url.protocol = 'https:';
+      return url.href;
+    } catch (_) { return ''; }
+  }
 
-function initApp() {
-    setupEventListeners();
-    
-    const cachedData = localStorage.getItem('b2b_catalog_data');
-    const cachedVersion = localStorage.getItem('b2b_catalog_version');
+  // A small RFC 4180 reader also preserves empty cells and quoted line breaks.
+  function parseCSV(text) {
+    text = text.replace(/^\uFEFF/, '');
+    const result = []; let row = [], cell = '', quoted = false;
+    for (let i = 0; i < text.length; i++) {
+      const c = text[i];
+      if (c === '"') {
+        if (quoted && text[i + 1] === '"') { cell += '"'; i++; }
+        else quoted = !quoted;
+      } else if (c === ',' && !quoted) { row.push(cell); cell = ''; }
+      else if ((c === '\r' || c === '\n') && !quoted) {
+        row.push(cell); result.push(row); row = []; cell = '';
+        if (c === '\r' && text[i + 1] === '\n') i++;
+      } else cell += c;
+    }
+    if (quoted) throw new Error('invalid_csv');
+    if (cell || row.length) { row.push(cell); result.push(row); }
+    return result;
+  }
 
-    if (cachedData && cachedVersion) {
+  function decode(matrix) {
+    if (!matrix.length) throw new Error('missing_header');
+    const header = matrix[0].map(normal);
+    const find = aliases => header.findIndex(name => aliases.includes(name));
+    const model = find(['모델', 'model', '모델명']);
+    const shade = find(['색상', 'color', '컬러']);
+    const price = header.lastIndexOf('단가');
+    const image = find(['이미지', 'image', '이미지url']);
+    const quantities = SIZES.map(size => header.indexOf(size));
+    if (model < 0 || shade < 0 || price < 0 || image < 0 || quantities.some(i => i < 0)) {
+      const legacy = ['품번', '컬러', '사이즈', '소재', '굽높이', '도매가'].every((h, i) => header[i] === h);
+      if (legacy && !sheetActivated) return null;
+      throw new Error('sheet_columns');
+    }
+    return matrix.slice(1).filter(row => row.some(cell => String(cell == null ? '' : cell).trim())).map((row, index) => {
+      if (!String(row[model] == null ? '' : row[model]).trim()) throw new Error('missing_model');
+      const qty = quantities.map(i => number(row[i]));
+      return {index, model: String(row[model]).trim(), color: String(row[shade] || '').trim(),
+        price: number(row[price]), qty, stock: qty.every(v => v !== null) ? qty.reduce((a, b) => a + b, 0) : null,
+        image: imageURL(row[image] || '')};
+    });
+  }
+
+  async function csvFrom(url, signal) {
+    const response = await fetch(url, {cache: 'no-store', credentials: 'omit', signal});
+    if (!response.ok) throw new Error('http_' + response.status);
+    return decode(parseCSV(await response.text()));
+  }
+
+  function jsonp(signal, token) {
+    return new Promise((resolve, reject) => {
+      const name = '__flameworks_' + token;
+      const script = document.createElement('script');
+      let done = false;
+      function finish(error, result) {
+        if (done) return; done = true;
+        clearTimeout(timeout); script.remove(); signal.removeEventListener('abort', abort);
+        // A cancelled JSONP response can arrive late; it must not overwrite newer rows.
+        window[name] = () => {};
+        setTimeout(() => { delete window[name]; }, 60000);
+        if (error) reject(error); else resolve(result);
+      }
+      function abort() { finish(new DOMException('Cancelled', 'AbortError')); }
+      const timeout = setTimeout(() => finish(new Error('timeout')), 12000);
+      window[name] = payload => {
         try {
-            const parsedCache = JSON.parse(cachedData);
-            processJSONData(parsedCache, false); // 초기 렌더링(캐시)
-            
-            checkVersionFromGoogleSheet(); 
-        } catch(e) {
-            fetchFullDataFromGoogleSheet();
-        }
-    } else {
-        fetchFullDataFromGoogleSheet();
-    }
-}
-
-function setupEventListeners() {
-    const searchInput = document.getElementById('searchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                applyFilters();
-            }, 300);
-        });
-    }
-
-    const grid = document.getElementById('catalog-grid');
-    if (grid) {
-        grid.addEventListener('click', handleCardInteractions);
-        
-        let touchstartX = 0;
-        grid.addEventListener('touchstart', e => {
-            const slider = e.target.closest('.slider-container');
-            if (slider) touchstartX = e.changedTouches[0].screenX;
-        }, {passive: true});
-
-        grid.addEventListener('touchend', e => {
-            const slider = e.target.closest('.slider-container');
-            if (slider) {
-                const touchendX = e.changedTouches[0].screenX;
-                const imgBox = slider.closest('.img-box');
-                if (touchendX < touchstartX - 30) moveSlide(imgBox, 1);
-                if (touchendX > touchstartX + 30) moveSlide(imgBox, -1);
-            }
-        }, {passive: true});
-    }
-
-    const filterWrap = document.getElementById('category-filters');
-    if (filterWrap) {
-        filterWrap.addEventListener('click', (e) => {
-            if (e.target.classList.contains('filter-btn')) {
-                document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
-                e.target.classList.add('active');
-                applyFilters(); 
-            }
-        });
-    }
-
-    const modalImgContainer = document.getElementById('modalImg');
-    if (modalImgContainer) {
-        let modalTouchStartX = 0;
-        modalImgContainer.addEventListener('touchstart', e => {
-            modalTouchStartX = e.changedTouches[0].screenX;
-        }, {passive: true});
-        
-        modalImgContainer.addEventListener('touchend', e => {
-            const touchendX = e.changedTouches[0].screenX;
-            const imgBox = modalImgContainer.querySelector('.img-box');
-            if(imgBox && imgBox.querySelector('.slider-container')) {
-                if (touchendX < modalTouchStartX - 30) moveSlide(imgBox, 1);
-                if (touchendX > modalTouchStartX + 30) moveSlide(imgBox, -1);
-            }
-        }, {passive: true});
-
-        modalImgContainer.addEventListener('click', e => {
-            const sliderBtn = e.target.closest('.slider-btn');
-            const sliderDot = e.target.closest('.slider-dot');
-            if (sliderBtn) {
-                e.stopPropagation();
-                const imgBox = sliderBtn.closest('.img-box');
-                const direction = sliderBtn.classList.contains('prev') ? -1 : 1;
-                moveSlide(imgBox, direction);
-            } else if (sliderDot) {
-                e.stopPropagation();
-                const imgBox = sliderDot.closest('.img-box');
-                const index = parseInt(sliderDot.dataset.index, 10);
-                goToSlide(imgBox, index);
-            }
-        });
-    }
-
-    document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-            checkVersionFromGoogleSheet();
-        }
+          if (!payload || payload.status === 'error' || !payload.table) throw new Error('sheet_response');
+          const cols = payload.table.cols;
+          const matrix = [cols.map(c => c.label || '')];
+          for (const row of payload.table.rows || []) {
+            matrix.push(cols.map((_, i) => row.c[i] && row.c[i].v != null ? String(row.c[i].v) : ''));
+          }
+          finish(null, decode(matrix));
+        } catch (error) { finish(error); }
+      };
+      script.onerror = () => finish(new Error('sheet_network'));
+      signal.addEventListener('abort', abort, {once: true});
+      if (signal.aborted) { abort(); return; }
+      const url = new URL('https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq');
+      url.searchParams.set('gid', SHEET_GID);
+      url.searchParams.set('headers', '1');
+      url.searchParams.set('tqx', 'out:json;responseHandler:' + name);
+      url.searchParams.set('t', token);
+      script.src = url.href;
+      document.head.appendChild(script);
     });
+  }
 
-    window.addEventListener('focus', checkVersionFromGoogleSheet);
-    window.addEventListener('pageshow', () => checkVersionFromGoogleSheet());
+  async function loadSheet(signal, token) {
+    const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/export?format=csv&gid=' + SHEET_GID + '&t=' + token;
+    // CSV is lossless. JSONP keeps the existing cross-origin fallback for webviews.
+    const csvController = new AbortController();
+    const abortCSV = () => csvController.abort();
+    signal.addEventListener('abort', abortCSV, {once: true});
+    const timeout = setTimeout(abortCSV, 5000);
+    try { return await csvFrom(url, csvController.signal); }
+    catch (error) {
+      if (signal.aborted) throw error;
+      return await jsonp(signal, token);
+    } finally { clearTimeout(timeout); signal.removeEventListener('abort', abortCSV); }
+  }
 
-    const refreshBtn = document.querySelector('.refresh-btn');
-    if (refreshBtn) {
-        refreshBtn.addEventListener('click', () => {
-            fetchFullDataFromGoogleSheet(true); // 수동 강제 갱신
-        });
-    }
-}
+  function quantity(value, label, total = false) {
+    return '<td class="qty' + (total ? ' total' : '') + (value === 0 ? ' zero' : value === null ? ' blank' : '') + '" data-label="' + label + '">' + (value === null ? '-' : money.format(value)) + '</td>';
+  }
 
-function checkVersionFromGoogleSheet() {
-    if (isFetchingFullData || isCheckingVersion) return; 
-    isCheckingVersion = true;
-
-    const scriptId = 'google-sheet-version-jsonp';
-    const existingScript = document.getElementById(scriptId);
-    if (existingScript) existingScript.remove(); 
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:versionCheckCallback&range=Z1&t=${new Date().getTime()}`;
-    
-    script.src = url;
-    script.onerror = () => { isCheckingVersion = false; };
-    document.head.appendChild(script);
-}
-
-window.versionCheckCallback = function(jsonObj) {
-    isCheckingVersion = false;
-    const script = document.getElementById('google-sheet-version-jsonp');
-    if (script) script.remove();
-
-    let latestVersion = "";
-    try {
-        if (jsonObj && jsonObj.table) {
-            if (jsonObj.table.rows.length > 0 && jsonObj.table.rows[0].c[0] && jsonObj.table.rows[0].c[0].v) {
-                latestVersion = jsonObj.table.rows[0].c[0].v.toString();
-            } else if (jsonObj.table.cols.length > 0 && jsonObj.table.cols[0].label) {
-                latestVersion = jsonObj.table.cols[0].label.toString();
-            }
-        }
-    } catch(e) {}
-
-    const cachedVersion = localStorage.getItem('b2b_catalog_version');
-
-    if (latestVersion && latestVersion !== cachedVersion) {
-        localStorage.setItem('b2b_catalog_version', latestVersion);
-        fetchFullDataFromGoogleSheet(true); // 자동 갱신  허용
-    }
-};
-
-function fetchFullDataFromGoogleSheet(forceLoadingUI = false) {
-    isFetchingFullData = true;
-    
-    if (forceLoadingUI || !localStorage.getItem('b2b_catalog_data')) {
-        showLoading(true);
-    }
-
-    const scriptId = 'google-sheet-full-jsonp';
-    const existingScript = document.getElementById(scriptId);
-    if (existingScript) existingScript.remove(); 
-
-    const script = document.createElement('script');
-    script.id = scriptId;
-    const url = `https://docs.google.com/spreadsheets/d/${GOOGLE_SHEET_ID}/gviz/tq?tqx=out:json;responseHandler:googleSheetCallback&t=${new Date().getTime()}`;
-    
-    script.src = url;
-    script.onerror = function() {
-        showLoading(false, true);
-        isFetchingFullData = false;
-    };
-    document.head.appendChild(script);
-}
-
-window.googleSheetCallback = function(jsonObj) {
-    const script = document.getElementById('google-sheet-full-jsonp');
-    if (script) script.remove();
-    isFetchingFullData = false;
-
-    try {
-        localStorage.setItem('b2b_catalog_data', JSON.stringify(jsonObj));
-        checkVersionFromGoogleSheet();
-    } catch(e) {}
-
-    processJSONData(jsonObj, true); 
-};
-
-function processJSONData(json, isNewData = false) {
-    if (!json || !json.table || !json.table.rows || json.table.rows.length === 0) {
-        showLoading(false, true);
-        return;
-    }
-
-    let headers = [];
-    let dataStartIndex = 0;
-
-    const hasLabels = json.table.cols.some(col => col.label && col.label.trim() !== "");
-    if (hasLabels) {
-        headers = json.table.cols.map(col => (col.label || "").replace(/\s+/g, ''));
-        dataStartIndex = 0;
-    } else {
-        const headerRow = json.table.rows[0].c;
-        headers = headerRow.map(cell => cell ? (cell.v || "").toString().replace(/\s+/g, '') : "");
-        dataStartIndex = 1;
-    }
-
-    const parsedData = [];
-    for (let r = dataStartIndex; r < json.table.rows.length; r++) {
-        const rowObj = {};
-        const rowData = json.table.rows[r].c;
-        if (!rowData) continue;
-        
-        let isEmptyRow = true;
-        for (let c = 0; c < headers.length; c++) {
-            if (headers[c]) {
-                let val = "";
-                if (rowData[c] && rowData[c].v !== null && rowData[c].v !== undefined) {
-                    val = rowData[c].v.toString();
-                    isEmptyRow = false;
-                }
-                rowObj[headers[c]] = val;
-            }
-        }
-        if (!isEmptyRow) parsedData.push(rowObj);
-    }
-
-    renderData(parsedData, isNewData);
-}
-
-function normalizeAssetUrl(url) {
-    if (!url || typeof url !== 'string') return '';
-
-    const trimmedUrl = url.trim();
-    if (!trimmedUrl) return '';
-
-    if (trimmedUrl.startsWith('data:') || trimmedUrl.startsWith('blob:')) return trimmedUrl;
-    if (trimmedUrl.startsWith('//')) return `https:${trimmedUrl}`;
-    if (/^http:\/\//i.test(trimmedUrl)) return trimmedUrl.replace(/^http:\/\//i, 'https://');
-    if (/^https:\/\//i.test(trimmedUrl)) return trimmedUrl;
-
-    return `https://${trimmedUrl}`;
-}
-
-function renderData(data, isNewData) {
-    const grid = document.getElementById('catalog-grid');
-    const uniqueCategories = new Set();
-    let htmlBuffer = ""; 
-
-    data.forEach((row) => {
-        const getVal = (possibleKeys) => {
-            for (let i = 0; i < possibleKeys.length; i++) {
-                if (row[possibleKeys[i]] !== undefined) {
-                    return row[possibleKeys[i]];
-                }
-            }
-            return "";
-        };
-
-        const category = getVal(["분류(카테고리)", "분류", "카테고리", "시즌"]) || "기본";
-        const code = getVal(["품번", "상품코드", "모델명"]);
-        const name = getVal(["비고", "상품명", "상품", "이름"]);
-        
-        if (!code && !name) return; 
-
-        let wholesale = getVal(["도매가", "도매", "도매단가"]);
-        let retail = getVal(["소비자가", "소비자"]);
-        wholesale = wholesale ? parseInt(wholesale.replace(/[^0-9]/g, '')).toLocaleString('ko-KR') : "0";
-        retail = retail ? parseInt(retail.replace(/[^0-9]/g, '')).toLocaleString('ko-KR') : "0";
-        
-        const material = getVal(["소재", "재질"]);
-        const heel = getVal(["굽높이", "굽"]);
-        const color = getVal(["컬러", "색상"]);
-        const size = getVal(["사이즈", "크기"]);
-
-        let imgUrls = [];
-        for(let i=1; i<=5; i++) {
-            let url = getVal([`이미지URL${i}`, `이미지${i}`, `이미지url${i}`]);
-            if(!url && i===1) url = getVal(["이미지URL", "이미지"]);
-            
-            url = normalizeAssetUrl(url);
-            if (url) imgUrls.push(url);
-        }
-
-        uniqueCategories.add(category);
-        const searchString = String((code || "") + " " + (name || "")).toLowerCase().replace(/["']/g, '');
-
-        htmlBuffer += buildCardHTMLString({category, imgUrls, code, name, wholesale, retail, material, heel, color, size, searchString});
-    });
-
-    grid.innerHTML = htmlBuffer;
-    
-    if (!document.getElementById('category-filters').innerHTML || isNewData) {
-        generateCategoryFilters(uniqueCategories);
-    }
-    
-    showLoading(false);
-    
+  function render(data) {
+    const selected = color.value;
+    color.replaceChildren(new Option('전체 색상', ''));
+    for (const value of new Set(data.map(p => p.color))) if (value) color.add(new Option(value, value));
+    color.value = Array.from(color.options).some(o => o.value === selected) ? selected : '';
+    products = data;
+    body.innerHTML = data.map(p => {
+      const name = esc(p.model + ' ' + p.color);
+      const image = p.image ? '<a class="photo" href="' + esc(p.image) + '" target="_blank" rel="noopener noreferrer" data-name="' + name + '" aria-label="' + name + ' 이미지 확대"><img src="' + esc(p.image) + '" width="104" height="104" loading="lazy" decoding="async" referrerpolicy="no-referrer" alt="' + name + '"><span class="image-error" hidden>이미지 연결 확인</span></a>' : '<span class="no-image">이미지 없음</span>';
+      return '<tr class="item" data-index="' + p.index + '"><td class="image-cell">' + image + '</td><th scope="row" class="model" data-label="모델">' + esc(p.model) + '</th><td class="color" data-label="색상">' + esc(p.color) + '</td><td class="price" data-label="단가">' + (p.price === null ? '-' : money.format(p.price) + '원') + '</td>' + p.qty.map((v, i) => quantity(v, SIZES[i])).join('') + quantity(p.stock, '합계', true) + '</tr>';
+    }).join('');
+    rows = Array.from(body.rows);
     applyFilters();
-}
+  }
 
-function formatRemarks(text) {
-    if (!text) return '';
-    return text.replace(/(#[^#]+)/g, match => `<span class="ws-hashtag">${match.trim()}</span>`);
-}
-
-function buildCardHTMLString(product) {
-    const {category, imgUrls, code, name, wholesale, retail, material, heel, color, size, searchString} = product;
-    
-    let imgHTML = '';
-    if (imgUrls.length === 0) {
-        imgHTML = `<div class="img-box"><div style="color:#9ca3af; font-size:0.9rem;">이미지 없음</div></div>`;
-    } else if (imgUrls.length === 1) {
-        imgHTML = `<div class="img-box"><img src="${imgUrls[0]}" class="preview-img" loading="lazy" decoding="async" onload="this.classList.add('loaded')"></div>`;
-    } else {
-        let slides = imgUrls.map((url, idx) => `<img src="${url}" class="slider-img" style="transform: translateX(-0%);" loading="lazy" decoding="async" onload="this.classList.add('loaded')">`).join('');
-        let dots = imgUrls.map((_, idx) => `<div class="slider-dot ${idx===0?'active':''}" data-index="${idx}"></div>`).join('');
-        imgHTML = `
-            <div class="img-box">
-                <div class="slider-container" data-current="0">${slides}</div>
-                <button class="slider-btn prev">❮</button>
-                <button class="slider-btn next">❯</button>
-                <div class="slider-dots">${dots}</div>
-            </div>
-        `;
-    }
-
-    let retailHTML = (retail && retail !== "0") ? `<div class="ws-retail"> <span>${retail}</span>원</div>` : '';
-    let priceHTML = `
-        <div class="ws-price-box">
-            <span class="ws-price-label">도매가</span>
-            <div class="ws-price"><span>${wholesale}</span><span style="font-size:0.9rem; font-weight:600;">원</span></div>
-            ${retailHTML}
-        </div>
-    `;
-
-    return `
-        <div class="ws-card" data-category="${category}" data-search-string="${searchString}">
-            <div class="ws-img-wrap">
-                <span class="ws-category-badge">${category}</span>
-                ${imgHTML}
-            </div>
-            <div class="ws-info">
-                <div class="ws-head-row">
-                    <div class="ws-title-box">
-                        <div class="ws-info-block">
-                            <span class="ws-code-label">모델명</span>
-                            <div class="ws-code">${code}</div>
-                        </div>
-                        ${name ? `
-                        <div class="ws-info-block" style="margin-top: 6px;">
-                            <div class="ws-name">${formatRemarks(name)}</div>
-                        </div>
-                        ` : ''}
-                    </div>
-                    ${priceHTML}
-                </div>
-                <table class="ws-specs">
-                    <tbody>
-                        <tr><th>소재</th><td>${material}</td></tr>
-                        <tr><th>굽높이</th><td>${heel}</td></tr>
-                        <tr><th>컬러</th><td>${color}</td></tr>
-                        <tr><th>사이즈</th><td>${size}</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    `;
-}
-
-function generateCategoryFilters(categories) {
-    const filterContainer = document.getElementById('category-filters');
-    const activeBtn = filterContainer.querySelector('.filter-btn.active');
-    const currentActive = activeBtn ? activeBtn.innerText.trim() : '전체보기';
-
-    let btnHtml = `<button class="filter-btn ${currentActive === '전체보기' ? 'active' : ''}">전체보기</button>`;
-    
-    categories.forEach(cat => {
-        if(cat) {
-            btnHtml += `<button class="filter-btn ${currentActive === cat ? 'active' : ''}">${cat}</button>`;
-        }
+  function applyFilters() {
+    const tokens = search.value.trim().toLowerCase().split(/[\s,]+/).filter(Boolean);
+    const codes = tokens.filter(t => /\d/.test(t));
+    const words = tokens.filter(t => !/\d/.test(t));
+    const [key, direction] = sort.value.split(':');
+    const ordered = products.slice().sort((a, b) => {
+      if (key === 'model') return collator.compare(a.model, b.model) || a.index - b.index;
+      if (a[key] === null || b[key] === null) return a[key] === b[key] ? a.index - b.index : a[key] === null ? 1 : -1;
+      return (a[key] - b[key]) * (direction === 'desc' ? -1 : 1) || a.index - b.index;
     });
-    filterContainer.innerHTML = btnHtml;
-}
-
-function applyFilters() {
-    const searchInputEl = document.getElementById('searchInput');
-    const searchInput = searchInputEl ? searchInputEl.value.toLowerCase().trim() : "";
-    const searchTerms = searchInput.split(/\s+/).filter(term => term.length > 0);
-    
-    let activeCategory = 'ALL';
-    const activeBtn = document.querySelector('.filter-btn.active');
-    if (activeBtn) {
-        const btnText = activeBtn.innerText.trim();
-        activeCategory = btnText === '전체보기' ? 'ALL' : btnText;
+    const fragment = document.createDocumentFragment(); let previous = null, visible = 0;
+    for (const p of ordered) {
+      const row = rows[p.index];
+      const text = normal(p.model + p.color);
+      row.hidden = (codes.length > 0 && !codes.some(code => normal(p.model).includes(normal(code)))) || !words.every(word => text.includes(normal(word))) || (color.value !== '' && p.color !== color.value);
+      if (!row.hidden) { row.classList.toggle('group-start', previous !== p.model); previous = p.model; visible++; }
+      fragment.appendChild(row);
     }
+    body.appendChild(fragment);
+    $('empty').hidden = visible > 0 || table.hidden;
+  }
 
-    const cards = document.querySelectorAll('.ws-card');
-    let visibleCount = 0;
-
-    cards.forEach(card => {
-        const cardCategory = card.getAttribute('data-category') || "";
-        const searchString = card.getAttribute('data-search-string') || "";
-        
-        const matchCategory = (activeCategory === 'ALL' || cardCategory === activeCategory);
-        let matchSearch = true;
-        if (searchTerms.length > 0) {
-             matchSearch = searchTerms.some(term => searchString.includes(term));
-        }
-
-        if (matchCategory && matchSearch) {
-            card.classList.remove('hidden');
-            visibleCount++;
-        } else {
-            card.classList.add('hidden');
-        }
-    });
-
-    const noResultsMsg = document.getElementById('no-results');
-    if (noResultsMsg) {
-        noResultsMsg.style.display = (visibleCount === 0 && cards.length > 0) ? 'block' : 'none';
+  async function refresh() {
+    if (document.visibilityState === 'hidden') return;
+    if (controller) controller.abort();
+    controller = new AbortController();
+    const signal = controller.signal;
+    const request = ++requestNumber;
+    const token = Date.now() + '_' + request;
+    table.setAttribute('aria-busy', 'true');
+    document.documentElement.classList.add('refreshing');
+    message.hidden = false; message.textContent = '상품을 불러오는 중입니다.';
+    const timeout = setTimeout(() => controller && request === requestNumber && controller.abort(), 22000);
+    try {
+      let data = await loadSheet(signal, token);
+      if (signal.aborted || request !== requestNumber) return;
+      if (data === null) {
+        // One-time migration: the existing sheet still has its old catalog schema.
+        // Never use a price snapshot on a network error or after the new sheet activates.
+        data = await csvFrom('catalog.csv?t=' + token, signal);
+        if (!data) throw new Error('invalid_seed');
+        if (signal.aborted || request !== requestNumber) return;
+        table.dataset.source = 'attachment';
+      } else {
+        sheetActivated = true;
+        try { localStorage.setItem('flameworks_sheet_active_v1', '1'); } catch (_) {}
+        table.dataset.source = 'sheet';
+      }
+      if (signal.aborted || request !== requestNumber) return;
+      table.hidden = false;
+      render(data);
+      message.hidden = true;
+    } catch (error) {
+      if (request !== requestNumber) return;
+      table.hidden = true; $('empty').hidden = true;
+      message.hidden = false;
+      message.textContent = navigator.onLine === false ? '인터넷 연결을 확인한 뒤 새로고침해 주세요.' : '최신 정보를 불러오지 못했습니다. 새로고침해 주세요.';
+    } finally {
+      clearTimeout(timeout);
+      if (request === requestNumber) {
+        table.removeAttribute('aria-busy');
+        document.documentElement.classList.remove('refreshing');
+      }
     }
-}
+  }
 
-function handleCardInteractions(e) {
-    const sliderBtn = e.target.closest('.slider-btn');
-    const sliderDot = e.target.closest('.slider-dot');
-    const card = e.target.closest('.ws-card');
-    
-    if (sliderBtn) {
-        e.stopPropagation();
-        const imgBox = sliderBtn.closest('.img-box');
-        const direction = sliderBtn.classList.contains('prev') ? -1 : 1;
-        moveSlide(imgBox, direction);
-        return;
+  function schedule() {
+    clearTimeout(timer);
+    if (document.visibilityState !== 'hidden') timer = setTimeout(refresh, 180);
+  }
+  search.addEventListener('input', applyFilters);
+  color.addEventListener('change', applyFilters);
+  sort.addEventListener('change', applyFilters);
+  $('reload').onclick = null;
+  $('reload').addEventListener('click', () => { clearTimeout(timer); refresh(); });
+  ['pageshow', 'focus', 'online'].forEach(type => window.addEventListener(type, schedule));
+  document.addEventListener('visibilitychange', schedule);
+  document.addEventListener('resume', schedule);
+  window.addEventListener('pagehide', () => { if (controller) controller.abort(); });
+  // Some embedded browsers resume frozen timers without a focus event.
+  let lastTick = Date.now();
+  setInterval(() => { const now = Date.now(); if (now - lastTick > 45000) schedule(); lastTick = now; }, 15000);
+
+  body.addEventListener('error', event => {
+    const img = event.target;
+    if (!(img instanceof HTMLImageElement)) return;
+    const link = img.closest('.photo');
+    if (link) { img.hidden = true; link.classList.add('failed'); link.querySelector('.image-error').hidden = false; }
+  }, true);
+  body.addEventListener('load', event => {
+    const img = event.target;
+    if (img instanceof HTMLImageElement && img.closest('.photo')) {
+      img.hidden = false; img.closest('.photo').classList.remove('failed'); img.closest('.photo').querySelector('.image-error').hidden = true;
     }
-
-    if (sliderDot) {
-        e.stopPropagation();
-        const imgBox = sliderDot.closest('.img-box');
-        const index = parseInt(sliderDot.dataset.index, 10);
-        goToSlide(imgBox, index);
-        return;
-    }
-
-    if (card) {
-        openModal(card);
-    }
-}
-
-function moveSlide(imgBox, direction) {
-    const container = imgBox.querySelector('.slider-container');
-    if(!container) return;
-    let current = parseInt(container.getAttribute('data-current'));
-    const total = container.querySelectorAll('.slider-img').length;
-    current += direction;
-    if(current < 0) current = total - 1;
-    if(current >= total) current = 0;
-    updateSlider(imgBox, container, current);
-}
-
-function goToSlide(imgBox, index) {
-    const container = imgBox.querySelector('.slider-container');
-    if(!container) return;
-    updateSlider(imgBox, container, index);
-}
-
-function updateSlider(imgBox, container, current) {
-    container.setAttribute('data-current', current);
-    container.querySelectorAll('.slider-img').forEach(img => {
-        img.style.transform = `translateX(-${current * 100}%)`;
-    });
-    imgBox.querySelectorAll('.slider-dot').forEach((dot, idx) => {
-        dot.classList.toggle('active', idx === current);
-    });
-}
-
-function openModal(card) {
-    const modal = document.getElementById('productModal');
-    const modalImg = document.getElementById('modalImg');
-    const modalInfo = document.getElementById('modalInfo');
-
-    const imgBox = card.querySelector('.img-box').cloneNode(true);
-    imgBox.style.cursor = 'default';
-    modalImg.innerHTML = '';
-    modalImg.appendChild(imgBox);
-
-    // 크게 보기 버튼 추가
-    const expandBtn = document.createElement('button');
-    expandBtn.className = 'modal-expand-btn';
-    expandBtn.innerHTML = '크게 보기';
-    expandBtn.onclick = function(e) {
-        e.stopPropagation();
-        let currentImgUrl = '';
-        const container = imgBox.querySelector('.slider-container');
-        if (container) {
-            const currentIdx = parseInt(container.getAttribute('data-current')) || 0;
-            const imgs = container.querySelectorAll('.slider-img');
-            if (imgs[currentIdx]) currentImgUrl = imgs[currentIdx].src;
-        } else {
-            const preview = imgBox.querySelector('.preview-img');
-            if (preview) currentImgUrl = preview.src;
-        }
-        if (currentImgUrl) window.open(currentImgUrl, '_blank');
-    };
-    modalImg.appendChild(expandBtn);
-
-    const infoBox = card.querySelector('.ws-info').cloneNode(true);
-    modalInfo.innerHTML = '';
-    modalInfo.appendChild(infoBox);
-
-    modal.classList.add('show');
-    document.body.style.overflow = 'hidden';
-}
-
-function closeModal(e) {
-    if(e) e.stopPropagation();
-    document.getElementById('productModal').classList.remove('show');
-    document.body.style.overflow = '';
-}
-
-function showLoading(isLoading, isError = false) {
-    const loadingEl = document.getElementById('loading');
-    const grid = document.getElementById('catalog-grid');
-    const filters = document.getElementById('category-filters');
-    
-    if (isError) {
-        loadingEl.innerHTML = `
-            <div style="color: #ef4444; margin-bottom: 10px; font-weight: bold;">⚠️ 데이터를 불러오지 못했습니다.</div>
-            <div style="font-size: 0.95rem; color: #4b5563;">구글 시트 공유 권한을 확인해주세요.</div>
-        `;
-        loadingEl.style.display = 'flex';
-        if(grid) grid.style.display = 'none';
-        if(filters) filters.style.display = 'none';
-        return;
-    }
-
-    if (isLoading) {
-        loadingEl.innerHTML = `
-            <div class="spinner"></div>
-            <div class="loading-text">데이터를 불러오는 중입니다...</div>
-        `;
-        loadingEl.style.display = 'flex';
-        if(grid) grid.style.display = 'none';
-        if(filters) filters.style.display = 'none';
-    } else {
-        loadingEl.style.display = 'none';
-        if(grid) grid.style.display = 'grid';
-        if(filters) filters.style.display = 'flex';
-    }
-}
+  }, true);
+  zoomImage.addEventListener('load', () => { zoomImage.hidden = false; $('zoom-error').hidden = true; });
+  zoomImage.addEventListener('error', () => { zoomImage.hidden = true; $('zoom-error').hidden = false; });
+  body.addEventListener('click', event => {
+    const link = event.target.closest('.photo');
+    if (!link || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey || event.button !== 0 || typeof dialog.showModal !== 'function') return;
+    event.preventDefault(); returnFocus = link;
+    $('zoom-name').textContent = link.dataset.name;
+    zoomImage.alt = link.dataset.name; $('original-link').href = link.href;
+    $('zoom-error').hidden = true; zoomImage.hidden = false; zoomImage.src = link.href;
+    dialog.showModal();
+  });
+  $('close-zoom').addEventListener('click', () => dialog.close());
+  dialog.addEventListener('click', event => {
+    if (event.target !== dialog) return;
+    const box = dialog.getBoundingClientRect();
+    if (event.clientX < box.left || event.clientX > box.right || event.clientY < box.top || event.clientY > box.bottom) dialog.close();
+  });
+  dialog.addEventListener('close', () => { if (returnFocus && returnFocus.isConnected) returnFocus.focus({preventScroll: true}); });
+  schedule();
+})();
