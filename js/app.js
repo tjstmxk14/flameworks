@@ -1,7 +1,8 @@
 (() => {
   'use strict';
-  const SHEET_ID = '1GakBnRrG4DS02deVaHGvE70LpP9qo0HOdf6ClgyhLgA';
-  const SHEET_GID = '1714803519';
+  const POLL_MS = 30000;
+  const TIMEOUT_MS = 12000;
+  const session = Date.now().toString(36) + Math.random().toString(36).slice(2);
   const SIZES = ['225', '230', '235', '240', '245', '250', '255'];
   const $ = id => document.getElementById(id);
   const body = document.querySelector('tbody');
@@ -16,17 +17,18 @@
   const money = new Intl.NumberFormat('ko-KR');
   const esc = text => String(text).replace(/[&<>"']/g, c => ({'&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;'}[c]));
   const normal = text => String(text).trim().toLowerCase().replace(/\s+/g, '');
-  let products = [], rows = [], timer, controller, requestNumber = 0, returnFocus;
-  let sheetActivated = false;
+  let products = [], rows = [], timer, pollTimer, controller, requestNumber = 0, returnFocus, lastText = null;
   try {
     localStorage.removeItem('b2b_catalog_data');
     localStorage.removeItem('b2b_catalog_version');
-    sheetActivated = localStorage.getItem('flameworks_sheet_active_v1') === '1';
+    localStorage.removeItem('flameworks_sheet_active_v1');
   } catch (_) { /* Storage may be disabled in an embedded browser. */ }
 
   function number(value) {
     const text = String(value == null ? '' : value).replace(/[,\s₩원]/g, '');
-    return /^\d+$/.test(text) && Number.isSafeInteger(Number(text)) ? Number(text) : null;
+    if (text === '') return null;
+    if (!/^\d+$/.test(text) || !Number.isSafeInteger(Number(text))) throw new Error('catalog_number');
+    return Number(text);
   }
 
   function imageURL(value) {
@@ -68,11 +70,10 @@
     const image = find(['이미지', 'image', '이미지url']);
     const quantities = SIZES.map(size => header.indexOf(size));
     if (model < 0 || shade < 0 || price < 0 || image < 0 || quantities.some(i => i < 0)) {
-      const legacy = ['품번', '컬러', '사이즈', '소재', '굽높이', '도매가'].every((h, i) => header[i] === h);
-      if (legacy && !sheetActivated) return null;
-      throw new Error('sheet_columns');
+      throw new Error('catalog_columns');
     }
     return matrix.slice(1).filter(row => row.some(cell => String(cell == null ? '' : cell).trim())).map((row, index) => {
+      if (row.length < Math.max(model, shade, price, image, ...quantities) + 1 || row.length > header.length) throw new Error('catalog_columns');
       if (!String(row[model] == null ? '' : row[model]).trim()) throw new Error('missing_model');
       const qty = quantities.map(i => number(row[i]));
       return {index, model: String(row[model]).trim(), color: String(row[shade] || '').trim(),
@@ -81,63 +82,20 @@
     });
   }
 
-  async function csvFrom(url, signal) {
-    const response = await fetch(url, {cache: 'no-store', credentials: 'omit', signal});
-    if (!response.ok) throw new Error('http_' + response.status);
-    return decode(parseCSV(await response.text()));
-  }
-
-  function jsonp(signal, token) {
-    return new Promise((resolve, reject) => {
-      const name = '__flameworks_' + token;
-      const script = document.createElement('script');
-      let done = false;
-      function finish(error, result) {
-        if (done) return; done = true;
-        clearTimeout(timeout); script.remove(); signal.removeEventListener('abort', abort);
-        // A cancelled JSONP response can arrive late; it must not overwrite newer rows.
-        window[name] = () => {};
-        setTimeout(() => { delete window[name]; }, 60000);
-        if (error) reject(error); else resolve(result);
-      }
-      function abort() { finish(new DOMException('Cancelled', 'AbortError')); }
-      const timeout = setTimeout(() => finish(new Error('timeout')), 12000);
-      window[name] = payload => {
-        try {
-          if (!payload || payload.status === 'error' || !payload.table) throw new Error('sheet_response');
-          const cols = payload.table.cols;
-          const matrix = [cols.map(c => c.label || '')];
-          for (const row of payload.table.rows || []) {
-            matrix.push(cols.map((_, i) => row.c[i] && row.c[i].v != null ? String(row.c[i].v) : ''));
-          }
-          finish(null, decode(matrix));
-        } catch (error) { finish(error); }
-      };
-      script.onerror = () => finish(new Error('sheet_network'));
-      signal.addEventListener('abort', abort, {once: true});
-      if (signal.aborted) { abort(); return; }
-      const url = new URL('https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/gviz/tq');
-      url.searchParams.set('gid', SHEET_GID);
-      url.searchParams.set('headers', '1');
-      url.searchParams.set('tqx', 'out:json;responseHandler:' + name);
-      url.searchParams.set('t', token);
-      script.src = url.href;
-      document.head.appendChild(script);
+  async function textFrom(url, signal) {
+    const response = await fetch(url, {
+      cache: 'no-store', credentials: 'omit', signal,
+      headers: {'Cache-Control': 'no-cache', 'Pragma': 'no-cache'}
     });
-  }
-
-  async function loadSheet(signal, token) {
-    const url = 'https://docs.google.com/spreadsheets/d/' + SHEET_ID + '/export?format=csv&gid=' + SHEET_GID + '&t=' + token;
-    // CSV is lossless. JSONP keeps the existing cross-origin fallback for webviews.
-    const csvController = new AbortController();
-    const abortCSV = () => csvController.abort();
-    signal.addEventListener('abort', abortCSV, {once: true});
-    const timeout = setTimeout(abortCSV, 5000);
-    try { return await csvFrom(url, csvController.signal); }
+    if (!response.ok) throw new Error('http_' + response.status);
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    try { return new TextDecoder('utf-8', {fatal: true}).decode(bytes); }
     catch (error) {
-      if (signal.aborted) throw error;
-      return await jsonp(signal, token);
-    } finally { clearTimeout(timeout); signal.removeEventListener('abort', abortCSV); }
+      // A damaged UTF-8 BOM file must not be misread as another encoding.
+      if (bytes[0] === 0xef && bytes[1] === 0xbb && bytes[2] === 0xbf) throw error;
+      // Browser EUC-KR decoding also covers Korean Windows CP949 CSV files.
+      return new TextDecoder('euc-kr', {fatal: true}).decode(bytes);
+    }
   }
 
   function quantity(value, label, total = false) {
@@ -145,6 +103,25 @@
   }
 
   function render(data) {
+    // Price/stock edits keep existing rows and images; only changed cells update.
+    if (data.length === products.length && data.every((p, i) =>
+      p.model === products[i].model && p.color === products[i].color && p.image === products[i].image)) {
+      for (const p of data) {
+        const old = products[p.index], cells = rows[p.index].cells;
+        if (p.price !== old.price) cells[3].textContent = p.price === null ? '-' : money.format(p.price) + '원';
+        const values = [...p.qty, p.stock], before = [...old.qty, old.stock];
+        values.forEach((value, i) => {
+          if (value === before[i]) return;
+          const cell = cells[i + 4];
+          cell.textContent = value === null ? '-' : money.format(value);
+          cell.classList.toggle('zero', value === 0);
+          cell.classList.toggle('blank', value === null);
+        });
+      }
+      products = data;
+      applyFilters();
+      return;
+    }
     const selected = color.value;
     color.replaceChildren(new Option('전체 색상', ''));
     for (const value of new Set(data.map(p => p.color))) if (value) color.add(new Option(value, value));
@@ -169,78 +146,95 @@
       if (a[key] === null || b[key] === null) return a[key] === b[key] ? a.index - b.index : a[key] === null ? 1 : -1;
       return (a[key] - b[key]) * (direction === 'desc' ? -1 : 1) || a.index - b.index;
     });
+    const reorder = ordered.some((p, i) => body.rows[i] !== rows[p.index]);
     const fragment = document.createDocumentFragment(); let previous = null, visible = 0;
     for (const p of ordered) {
       const row = rows[p.index];
       const text = normal(p.model + p.color);
       row.hidden = (codes.length > 0 && !codes.some(code => normal(p.model).includes(normal(code)))) || !words.every(word => text.includes(normal(word))) || (color.value !== '' && p.color !== color.value);
       if (!row.hidden) { row.classList.toggle('group-start', previous !== p.model); previous = p.model; visible++; }
-      fragment.appendChild(row);
+      if (reorder) fragment.appendChild(row);
     }
-    body.appendChild(fragment);
+    if (reorder) body.appendChild(fragment);
     $('empty').hidden = visible > 0 || table.hidden;
   }
 
-  async function refresh() {
-    if (document.visibilityState === 'hidden') return;
+  function showError() {
+    table.hidden = true; $('empty').hidden = true;
+    message.hidden = false;
+    message.textContent = navigator.onLine === false ? '인터넷 연결을 확인한 뒤 새로고침해 주세요.' : '최신 정보를 불러오지 못했습니다. 새로고침해 주세요.';
+  }
+
+  async function refresh(mask = false, restart = false) {
+    if (document.visibilityState === 'hidden' || (controller && !restart)) return;
+    clearTimeout(timer); clearTimeout(pollTimer);
     if (controller) controller.abort();
-    controller = new AbortController();
-    const signal = controller.signal;
+    const current = new AbortController();
+    controller = current;
     const request = ++requestNumber;
-    const token = Date.now() + '_' + request;
+    const token = session + '_' + Date.now() + '_' + request;
     table.setAttribute('aria-busy', 'true');
-    document.documentElement.classList.add('refreshing');
-    message.hidden = false; message.textContent = '상품을 불러오는 중입니다.';
-    const timeout = setTimeout(() => controller && request === requestNumber && controller.abort(), 22000);
+    if (mask || table.hidden) document.documentElement.classList.add('refreshing');
+    if (table.hidden) { message.hidden = false; message.textContent = '상품을 불러오는 중입니다.'; }
+    const timeout = setTimeout(() => current.abort(), TIMEOUT_MS);
     try {
-      let data = await loadSheet(signal, token);
-      if (signal.aborted || request !== requestNumber) return;
-      if (data === null) {
-        // One-time migration: the existing sheet still has its old catalog schema.
-        // Never use a price snapshot on a network error or after the new sheet activates.
-        data = await csvFrom('catalog.csv?t=' + token, signal);
-        if (!data) throw new Error('invalid_seed');
-        if (signal.aborted || request !== requestNumber) return;
-        table.dataset.source = 'attachment';
+      if (navigator.onLine === false) throw new Error('offline');
+      const text = await textFrom('catalog.csv?t=' + token, current.signal);
+      if (current.signal.aborted || request !== requestNumber) return;
+      if (text !== lastText) {
+        const data = decode(parseCSV(text));
+        table.hidden = false;
+        render(data);
+        lastText = text;
       } else {
-        sheetActivated = true;
-        try { localStorage.setItem('flameworks_sheet_active_v1', '1'); } catch (_) {}
-        table.dataset.source = 'sheet';
+        table.hidden = false;
+        $('empty').hidden = rows.some(row => !row.hidden);
       }
-      if (signal.aborted || request !== requestNumber) return;
-      table.hidden = false;
-      render(data);
+      table.dataset.source = 'csv';
       message.hidden = true;
     } catch (error) {
       if (request !== requestNumber) return;
-      table.hidden = true; $('empty').hidden = true;
-      message.hidden = false;
-      message.textContent = navigator.onLine === false ? '인터넷 연결을 확인한 뒤 새로고침해 주세요.' : '최신 정보를 불러오지 못했습니다. 새로고침해 주세요.';
+      // Never present the previous price as current after a failed refresh.
+      showError();
     } finally {
       clearTimeout(timeout);
       if (request === requestNumber) {
+        controller = null;
         table.removeAttribute('aria-busy');
         document.documentElement.classList.remove('refreshing');
+        if (document.visibilityState !== 'hidden' && navigator.onLine !== false) {
+          pollTimer = setTimeout(() => refresh(), POLL_MS);
+        }
       }
     }
   }
 
+  function suspend() {
+    clearTimeout(timer); clearTimeout(pollTimer);
+    ++requestNumber;
+    if (controller) controller.abort();
+    controller = null;
+    table.removeAttribute('aria-busy');
+    // Hide price/stock before a back-forward-cache snapshot is restored.
+    document.documentElement.classList.add('refreshing');
+  }
+
   function schedule() {
+    if (document.visibilityState === 'hidden') { suspend(); return; }
     clearTimeout(timer);
-    if (document.visibilityState !== 'hidden') timer = setTimeout(refresh, 180);
+    document.documentElement.classList.add('refreshing');
+    timer = setTimeout(() => refresh(true), 180);
   }
   search.addEventListener('input', applyFilters);
   color.addEventListener('change', applyFilters);
   sort.addEventListener('change', applyFilters);
   $('reload').onclick = null;
-  $('reload').addEventListener('click', () => { clearTimeout(timer); refresh(); });
+  $('reload').addEventListener('click', () => refresh(true, true));
   ['pageshow', 'focus', 'online'].forEach(type => window.addEventListener(type, schedule));
   document.addEventListener('visibilitychange', schedule);
   document.addEventListener('resume', schedule);
-  window.addEventListener('pagehide', () => { if (controller) controller.abort(); });
-  // Some embedded browsers resume frozen timers without a focus event.
-  let lastTick = Date.now();
-  setInterval(() => { const now = Date.now(); if (now - lastTick > 45000) schedule(); lastTick = now; }, 15000);
+  window.addEventListener('pagehide', suspend);
+  window.addEventListener('offline', () => { suspend(); showError(); });
 
   body.addEventListener('error', event => {
     const img = event.target;
